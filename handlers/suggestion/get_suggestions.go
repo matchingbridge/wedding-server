@@ -21,20 +21,20 @@ func GetSuggestions(c *gin.Context) {
 	}
 	defer tx.Rollback()
 
-	var suggestion models.Suggestion
+	var suggestions []models.Suggestion
 
 	now := time.Now()
 	year, month, day := now.Year(), now.Month(), now.Day()
-	if err := tx.Where("user_id = ? and year(suggested_at) = ? and month(suggested_at) = ? and day(suggested_at) = ?", userID, year, month, day).Take(&suggestion).Error; err != nil {
+	if err := tx.Where("user_id = ? and year(suggested_at) = ? and month(suggested_at) = ? and day(suggested_at) = ?", userID, year, month, day).Take(&suggestions).Error; err != nil {
 		if findErr := find(userID, tx); findErr != nil {
-			c.AbortWithStatusJSON(http.StatusNotFound, findErr)
+			c.JSON(http.StatusOK, suggestions)
 			return
 		}
 	}
 
 	tx.Commit()
 
-	c.JSON(http.StatusOK, suggestion)
+	c.JSON(http.StatusOK, suggestions)
 }
 
 func find(userID string, tx *gorm.DB) error {

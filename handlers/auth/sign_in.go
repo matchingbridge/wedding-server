@@ -16,8 +16,8 @@ import (
 )
 
 type SignInRequest struct {
-	Email    string `form:"email"  json:"email"  binding:"required,min=8,max=16"`
-	Password string `form:"password" json:"password" binding:"required,min=8,max=16"`
+	Email    string `form:"email"    json:"email"    binding:"required"`
+	Password string `form:"password" json:"password" binding:"required"`
 }
 
 func SignIn(c *gin.Context) {

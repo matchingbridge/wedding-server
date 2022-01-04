@@ -37,6 +37,13 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
+	request.User.UserID = uuid.NewString()
+	request.User.Face1 = uuid.NewString()
+	request.User.Face2 = uuid.NewString()
+	request.User.Body1 = uuid.NewString()
+	request.User.Body2 = uuid.NewString()
+	request.User.Video = uuid.NewString()
+
 	tx := mysql.DB.Begin()
 	if err = tx.Error; err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, "데이터 베이스 연결 실패")
@@ -55,27 +62,27 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	if _, err = uploadMedia(request.User.UserID, "face1", request.Face1); err != nil {
+	if err = uploadMedia("face1", request.User.Face1, request.Face1); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, "얼굴 사진 1 업로드 실패")
 		return
 	}
 
-	if _, err = uploadMedia(request.User.UserID, "face2", request.Face2); err != nil {
+	if err = uploadMedia("face2", request.User.Face2, request.Face2); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, "얼굴 사진 2 업로드 실패")
 		return
 	}
 
-	if _, err = uploadMedia(request.User.UserID, "body1", request.Body1); err != nil {
+	if err = uploadMedia("body1", request.User.Body1, request.Body1); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, "전신 사진 1업로드 실패")
 		return
 	}
 
-	if _, err = uploadMedia(request.User.UserID, "body2", request.Body2); err != nil {
+	if err = uploadMedia("body2", request.User.Body2, request.Body2); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, "전신 사진 2업로드 실패")
 		return
 	}
 
-	if _, err = uploadMedia(request.User.UserID, "video", request.Video); err != nil {
+	if err = uploadMedia("video", request.User.Video, request.Video); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, "영상 업로드 실패")
 		return
 	}
@@ -124,14 +131,14 @@ func validateSignUp(err error) error { // TODO: Check with nested
 	return nil
 }
 
-func uploadMedia(userID string, bucket string, header *multipart.FileHeader) (key string, err error) {
+func uploadMedia(bucket string, name string, header *multipart.FileHeader) error {
 	file, err := header.Open()
 	if err != nil {
-		return
+		return nil
 	}
 	defer file.Close()
 
-	key = s3.MakeKey(bucket, userID)
+	key := s3.MakeKey(bucket, name)
 	defer func() {
 		if r := recover(); r != nil {
 			s3.DeleteFile(key)
@@ -140,10 +147,9 @@ func uploadMedia(userID string, bucket string, header *multipart.FileHeader) (ke
 	}()
 	fileByte, err := ioutil.ReadAll(file)
 	if err != nil {
-		return
+		return nil
 	}
-	err = s3.UploadFile(key, fileByte)
-	return
+	return s3.UploadFile(key, fileByte)
 }
 
 func hashAndSalt(pwd string) (string, error) {
